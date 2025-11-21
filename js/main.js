@@ -1,30 +1,44 @@
 // js/main.js
 
-// Collections
+// Firestore collections
 const itemsCol = db.collection("items");
 const preordersCol = db.collection("preorders");
 const extraCol = db.collection("extraOrders");
 
-// In-memory state (kept in sync with Firestore)
+// In-memory state
 let items = [];
 let preorders = [];
 let extraOrders = [];
 
-/* ---------------- NAVIGATION ---------------- */
+/* ---------------- SIDEBAR & NAVIGATION ---------------- */
 
 const sections = document.querySelectorAll(".section");
 const navButtons = document.querySelectorAll(".nav-btn");
+const sidebar = document.getElementById("sidebar");
+const sidebarToggle = document.getElementById("sidebar-toggle");
 
 navButtons.forEach(btn => {
   btn.addEventListener("click", () => {
     const sectionId = btn.dataset.section;
+
     sections.forEach(s => s.classList.remove("visible"));
     document.getElementById(sectionId).classList.add("visible");
 
     navButtons.forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
+
+    // Close sidebar on small screens after navigation
+    if (window.innerWidth <= 900 && sidebar) {
+      sidebar.classList.remove("open");
+    }
   });
 });
+
+if (sidebarToggle && sidebar) {
+  sidebarToggle.addEventListener("click", () => {
+    sidebar.classList.toggle("open");
+  });
+}
 
 /* ---------------- UTILITIES ---------------- */
 
@@ -38,7 +52,6 @@ function findItemById(id) {
 }
 
 function calcUsageByItem() {
-  // returns maps: { itemId: qty }
   const preorderUsage = {};
   preorders.forEach(p => {
     preorderUsage[p.itemId] = (preorderUsage[p.itemId] || 0) + p.quantity;
@@ -69,7 +82,7 @@ preordersCol.orderBy("createdAt").onSnapshot(snapshot => {
   updateDashboardStats();
 });
 
-// Extra Orders
+// Extra orders
 extraCol.orderBy("createdAt").onSnapshot(snapshot => {
   extraOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   renderExtraTable();
@@ -90,12 +103,7 @@ itemForm.addEventListener("submit", async (e) => {
   const preorderStock = parseInt(document.getElementById("item-preorder-stock").value || "0", 10);
   const extraStock = parseInt(document.getElementById("item-extra-stock").value || "0", 10);
 
-  const data = {
-    name,
-    price,
-    preorderStock,
-    extraStock
-  };
+  const data = { name, price, preorderStock, extraStock };
 
   try {
     if (id) {
@@ -178,22 +186,31 @@ const preorderNameInput = document.getElementById("preorder-name");
 const preorderCostLabel = document.getElementById("preorder-cost");
 const preorderWarning = document.getElementById("preorder-stock-warning");
 const btnAddPreorder = document.getElementById("btn-add-preorder");
+const preorderCancelBtn = document.getElementById("preorder-cancel-btn");
 
 btnAddPreorder.addEventListener("click", () => openPreorderDialog());
 
+if (preorderCancelBtn) {
+  preorderCancelBtn.addEventListener("click", () => {
+    preorderForm.reset();
+    preorderWarning.textContent = "";
+    preorderDialog.close();
+  });
+}
+
 function openPreorderDialog(existing = null) {
   preorderForm.reset();
-  document.getElementById("preorder-id").value = existing ? existing.id : "";
   preorderWarning.textContent = "";
+  document.getElementById("preorder-id").value = existing ? existing.id : "";
+  document.getElementById("preorder-dialog-title").textContent = existing ? "Edit Preorder" : "Add Preorder";
 
   if (existing) {
-    document.getElementById("preorder-dialog-title").textContent = "Edit Preorder";
     preorderNameInput.value = existing.name;
     preorderItemSelect.value = existing.itemId;
     preorderQtyInput.value = existing.quantity;
     updatePreorderCost();
   } else {
-    document.getElementById("preorder-dialog-title").textContent = "Add Preorder";
+    preorderCostLabel.textContent = "R 0";
   }
 
   if (typeof preorderDialog.showModal === "function") {
@@ -213,9 +230,8 @@ function updatePreorderCost() {
   }
 
   const { preorderUsage } = calcUsageByItem();
-  const usedPre = preorderUsage[item.id] || 0;
+  let usedPre = preorderUsage[item.id] || 0;
 
-  // If editing, subtract the current order’s qty so we don't double count
   const editingId = document.getElementById("preorder-id").value;
   if (editingId) {
     const existing = preorders.find(p => p.id === editingId);
@@ -276,16 +292,21 @@ preorderForm.addEventListener("submit", async (e) => {
     itemId,
     quantity: qty,
     cost: item.price * qty,
-    couponGiven: false,
-    couponRedeemed: false,
+    // keep coupon states when editing
+    couponGiven: id ? undefined : false,
+    couponRedeemed: id ? undefined : false,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
 
   try {
     if (id) {
-      delete data.createdAt; // keep original
+      delete data.createdAt;
+      if (data.couponGiven === undefined) delete data.couponGiven;
+      if (data.couponRedeemed === undefined) delete data.couponRedeemed;
       await preordersCol.doc(id).set(data, { merge: true });
     } else {
+      data.couponGiven = false;
+      data.couponRedeemed = false;
       await preordersCol.add(data);
     }
     preorderDialog.close();
@@ -302,8 +323,8 @@ function renderPreordersTable() {
   preorders.forEach((order, index) => {
     totalValue += order.cost || 0;
     const item = findItemById(order.itemId);
-    const tr = document.createElement("tr");
 
+    const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${index + 1}</td>
       <td>${order.name}</td>
@@ -321,8 +342,8 @@ function renderPreordersTable() {
         </span>
       </td>
       <td>
-        <button class="secondary-btn btn-small" data-action="edit" data-id="${order.id}">✏️</button>
-        <button class="secondary-btn btn-small" data-action="delete" data-id="${order.id}">🗑️</button>
+        <button class="secondary-btn btn-small" data-action="edit" data-id="${order.id}">Edit</button>
+        <button class="secondary-btn btn-small" data-action="delete" data-id="${order.id}">Delete</button>
       </td>
     `;
 
@@ -332,6 +353,7 @@ function renderPreordersTable() {
   document.getElementById("preorders-count").textContent = preorders.length;
   document.getElementById("preorders-value").textContent = formatCurrency(totalValue);
 
+  // Toggle coupon states
   tbody.querySelectorAll(".badge-toggle").forEach(badge => {
     badge.addEventListener("click", async () => {
       const id = badge.dataset.id;
@@ -349,6 +371,7 @@ function renderPreordersTable() {
     });
   });
 
+  // Edit / delete
   tbody.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
@@ -377,22 +400,31 @@ const extraPaymentSelect = document.getElementById("extra-payment");
 const extraCostLabel = document.getElementById("extra-cost");
 const extraWarning = document.getElementById("extra-stock-warning");
 const btnAddExtra = document.getElementById("btn-add-extra");
+const extraCancelBtn = document.getElementById("extra-cancel-btn");
 
 btnAddExtra.addEventListener("click", () => openExtraDialog());
 
+if (extraCancelBtn) {
+  extraCancelBtn.addEventListener("click", () => {
+    extraForm.reset();
+    extraWarning.textContent = "";
+    extraDialog.close();
+  });
+}
+
 function openExtraDialog(existing = null) {
   extraForm.reset();
-  document.getElementById("extra-id").value = existing ? existing.id : "";
   extraWarning.textContent = "";
+  document.getElementById("extra-id").value = existing ? existing.id : "";
+  document.getElementById("extra-dialog-title").textContent = existing ? "Edit Extra Order" : "Add Extra Order";
 
   if (existing) {
-    document.getElementById("extra-dialog-title").textContent = "Edit Extra Order";
     extraItemSelect.value = existing.itemId;
     extraQtyInput.value = existing.quantity;
     extraPaymentSelect.value = existing.paymentMethod;
     updateExtraCost();
   } else {
-    document.getElementById("extra-dialog-title").textContent = "Add Extra Order";
+    extraCostLabel.textContent = "R 0";
   }
 
   if (typeof extraDialog.showModal === "function") {
@@ -474,15 +506,17 @@ extraForm.addEventListener("submit", async (e) => {
     quantity: qty,
     paymentMethod: payment,
     cost: item.price * qty,
-    paid: false,
+    paid: id ? undefined : false,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
 
   try {
     if (id) {
       delete data.createdAt;
+      if (data.paid === undefined) delete data.paid;
       await extraCol.doc(id).set(data, { merge: true });
     } else {
+      data.paid = false;
       await extraCol.add(data);
     }
     extraDialog.close();
@@ -514,8 +548,8 @@ function renderExtraTable() {
         </span>
       </td>
       <td>
-        <button class="secondary-btn btn-small" data-action="edit" data-id="${order.id}">✏️</button>
-        <button class="secondary-btn btn-small" data-action="delete" data-id="${order.id}">🗑️</button>
+        <button class="secondary-btn btn-small" data-action="edit" data-id="${order.id}">Edit</button>
+        <button class="secondary-btn btn-small" data-action="delete" data-id="${order.id}">Delete</button>
       </td>
     `;
 
@@ -525,6 +559,7 @@ function renderExtraTable() {
   document.getElementById("extra-count").textContent = extraOrders.length;
   document.getElementById("extra-value").textContent = formatCurrency(totalValue);
 
+  // Toggle paid
   tbody.querySelectorAll(".badge-toggle").forEach(badge => {
     badge.addEventListener("click", async () => {
       const id = badge.dataset.id;
@@ -534,6 +569,7 @@ function renderExtraTable() {
     });
   });
 
+  // Edit / delete
   tbody.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
@@ -611,13 +647,3 @@ function updateDashboardStats() {
   document.getElementById("stat-coupons-redeemed").textContent = couponsRedeemed;
   document.getElementById("stat-total-revenue").textContent = formatCurrency(totalRevenue);
 }
-
-/* -------- Small button style tweak -------- */
-
-document.addEventListener("DOMContentLoaded", () => {
-  const style = document.createElement("style");
-  style.textContent = `
-    .btn-small { padding: 0.2rem 0.5rem; font-size: 0.75rem; }
-  `;
-  document.head.appendChild(style);
-});
