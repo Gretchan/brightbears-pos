@@ -5,20 +5,16 @@
   <title>Bright Bears Educare - Tuckshop POS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Firebase (compat SDKs) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <!-- Chewy font -->
+  <link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
 
-  <!-- Your Firebase config (uses firebase.initializeApp) -->
-  <script src="js/firebase-config.js"></script>
-
-  <!-- Main app logic -->
-  <script src="js/main.js"></script>
-
+  <!-- Styles (VERY IMPORTANT: path must be exactly this) -->
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
   <header class="app-header">
     <div class="logo-title">
+      <!-- If your logo file has a different name or folder, update src accordingly -->
       <img src="assets/logo.png" alt="Bright Bears Educare Logo" class="logo" />
       <div class="title-block">
         <h1>Bright Bears Educare</h1>
@@ -115,7 +111,7 @@
           </tr>
         </thead>
         <tbody id="items-table-body">
-          <!-- Populated by JS -->
+          <!-- Filled by JS -->
         </tbody>
       </table>
     </section>
@@ -145,8 +141,7 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="preorders-table-body">
-        </tbody>
+        <tbody id="preorders-table-body"></tbody>
       </table>
     </section>
 
@@ -174,11 +169,9 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="extra-table-body">
-        </tbody>
+        <tbody id="extra-table-body"></tbody>
       </table>
     </section>
-
   </main>
 
   <!-- PREORDER MODAL -->
@@ -237,6 +230,14 @@
     </form>
   </dialog>
 
+  <!-- Firebase (compat SDKs) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- Your Firebase config (creates `db`) -->
+  <script src="js/firebase-config.js"></script>
+
+  <!-- Main app logic -->
   <script src="js/main.js"></script>
 </body>
 </html>
