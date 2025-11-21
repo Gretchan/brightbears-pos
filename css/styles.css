@@ -1,3 +1,4 @@
+/* ============== ROOT VARIABLES ============== */
 :root {
   --pink-primary: #f2207d;
   --pink-soft: #e461a1;
@@ -6,10 +7,11 @@
   --mint: #84f2e9;
   --white: #ffffff;
   --bg: #fdfdfd;
-  --text-dark: #333;
+  --text-dark: #333333;
   --border-radius: 18px;
 }
 
+/* ============== GLOBAL RESET ============== */
 * {
   box-sizing: border-box;
 }
@@ -20,6 +22,8 @@ body {
   background: var(--bg);
   color: var(--text-dark);
 }
+
+/* ============== HEADER ============== */
 
 .app-header {
   display: flex;
@@ -40,6 +44,7 @@ body {
   height: 70px;
   width: 70px;
   border-radius: 50%;
+  object-fit: cover;
 }
 
 .title-block h1 {
@@ -53,6 +58,8 @@ body {
   margin: 0;
   color: var(--blue);
 }
+
+/* ============== NAVIGATION ============== */
 
 .top-nav {
   display: flex;
@@ -68,12 +75,20 @@ body {
   background: var(--white);
   cursor: pointer;
   font-weight: bold;
+  font-size: 0.9rem;
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+
+.nav-btn:hover {
+  transform: translateY(-1px);
 }
 
 .nav-btn.active {
   background: var(--pink-primary);
   color: var(--white);
 }
+
+/* ============== MAIN LAYOUT ============== */
 
 main {
   padding: 1.25rem 1.5rem 2rem;
@@ -90,7 +105,10 @@ main {
 .section h2 {
   font-family: "Chewy", cursive;
   color: var(--purple);
+  margin-top: 0;
 }
+
+/* ============== DASHBOARD CARDS ============== */
 
 .cards-grid {
   display: grid;
@@ -104,7 +122,7 @@ main {
   padding: 1rem;
   border-radius: var(--border-radius);
   border: 2px solid var(--mint);
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .card h3 {
@@ -119,7 +137,7 @@ main {
   color: var(--pink-primary);
 }
 
-/* Forms & tables */
+/* ============== FORMS ============== */
 
 .inline-form {
   display: flex;
@@ -130,7 +148,7 @@ main {
   padding: 0.75rem;
   background: var(--white);
   border-radius: var(--border-radius);
-  border: 1px solid #eee;
+  border: 1px solid #eeeeee;
 }
 
 .form-row {
@@ -144,20 +162,25 @@ main {
   margin-bottom: 0.25rem;
 }
 
-input, select {
+input,
+select {
   padding: 0.4rem 0.5rem;
   border-radius: 999px;
-  border: 1px solid #ccc;
+  border: 1px solid #cccccc;
+  font-size: 0.9rem;
 }
 
-/* Buttons */
+/* ============== BUTTONS ============== */
 
-.primary-btn, .secondary-btn {
+.primary-btn,
+.secondary-btn {
   padding: 0.45rem 1rem;
   border-radius: 999px;
   border: none;
   cursor: pointer;
   font-weight: bold;
+  font-size: 0.9rem;
+  transition: background 0.2s, color 0.2s, transform 0.1s;
 }
 
 .primary-btn {
@@ -167,6 +190,7 @@ input, select {
 
 .primary-btn:hover {
   background: var(--pink-soft);
+  transform: translateY(-1px);
 }
 
 .secondary-btn {
@@ -177,7 +201,15 @@ input, select {
 
 .secondary-btn:hover {
   background: var(--mint);
+  transform: translateY(-1px);
 }
+
+.btn-small {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* ============== SECTION HEADERS & SUMMARY ROWS ============== */
 
 .section-header-row {
   display: flex;
@@ -193,7 +225,7 @@ input, select {
   margin: 0.5rem 0 1rem;
 }
 
-/* Tables */
+/* ============== TABLES ============== */
 
 .data-table {
   width: 100%;
@@ -206,7 +238,7 @@ input, select {
 .data-table th,
 .data-table td {
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #eeeeee;
   text-align: left;
   font-size: 0.9rem;
 }
@@ -220,13 +252,16 @@ input, select {
   background: #f7fbff;
 }
 
+/* ============== STATUS BADGES (TOGGLES) ============== */
+
 .badge-toggle {
   display: inline-block;
   padding: 0.15rem 0.6rem;
   border-radius: 999px;
   font-size: 0.75rem;
   cursor: pointer;
-  border: 1px solid #ccc;
+  border: 1px solid #cccccc;
+  user-select: none;
 }
 
 .badge-toggle.on {
@@ -239,10 +274,10 @@ input, select {
   border-color: var(--pink-soft);
 }
 
-/* Modals */
+/* ============== MODALS ============== */
 
 .modal::backdrop {
-  background: rgba(0,0,0,0.25);
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .modal {
@@ -276,4 +311,18 @@ input, select {
   min-height: 1.2rem;
   color: var(--pink-primary);
   font-size: 0.8rem;
+}
+
+/* ============== RESPONSIVE TWEAKS ============== */
+
+@media (max-width: 768px) {
+  .inline-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
