@@ -1,0 +1,279 @@
+:root {
+  --pink-primary: #f2207d;
+  --pink-soft: #e461a1;
+  --purple: #85639f;
+  --blue: #41aeda;
+  --mint: #84f2e9;
+  --white: #ffffff;
+  --bg: #fdfdfd;
+  --text-dark: #333;
+  --border-radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Comic Sans MS", "Chewy", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text-dark);
+}
+
+.app-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 4px solid var(--pink-primary);
+  background: var(--white);
+}
+
+.logo-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo {
+  height: 70px;
+  width: 70px;
+  border-radius: 50%;
+}
+
+.title-block h1 {
+  margin: 0;
+  font-family: "Chewy", cursive;
+  font-size: 2rem;
+  color: var(--purple);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--blue);
+}
+
+.top-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 2px solid var(--pink-primary);
+  background: var(--white);
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.nav-btn.active {
+  background: var(--pink-primary);
+  color: var(--white);
+}
+
+main {
+  padding: 1.25rem 1.5rem 2rem;
+}
+
+.section {
+  display: none;
+}
+
+.section.visible {
+  display: block;
+}
+
+.section h2 {
+  font-family: "Chewy", cursive;
+  color: var(--purple);
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.card {
+  background: var(--white);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  border: 2px solid var(--mint);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 0.3rem;
+  font-size: 1rem;
+}
+
+.card p {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--pink-primary);
+}
+
+/* Forms & tables */
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--white);
+  border-radius: var(--border-radius);
+  border: 1px solid #eee;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.form-row label {
+  font-size: 0.8rem;
+  margin-bottom: 0.25rem;
+}
+
+input, select {
+  padding: 0.4rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid #ccc;
+}
+
+/* Buttons */
+
+.primary-btn, .secondary-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.primary-btn {
+  background: var(--pink-primary);
+  color: var(--white);
+}
+
+.primary-btn:hover {
+  background: var(--pink-soft);
+}
+
+.secondary-btn {
+  background: var(--white);
+  border: 2px solid var(--blue);
+  color: var(--blue);
+}
+
+.secondary-btn:hover {
+  background: var(--mint);
+}
+
+.section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.5rem 0 1rem;
+}
+
+/* Tables */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--white);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.data-table thead {
+  background: var(--blue);
+  color: var(--white);
+}
+
+.data-table tbody tr:nth-child(even) {
+  background: #f7fbff;
+}
+
+.badge-toggle {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  border: 1px solid #ccc;
+}
+
+.badge-toggle.on {
+  background: var(--mint);
+  border-color: var(--blue);
+}
+
+.badge-toggle.off {
+  background: #fbe5f0;
+  border-color: var(--pink-soft);
+}
+
+/* Modals */
+
+.modal::backdrop {
+  background: rgba(0,0,0,0.25);
+}
+
+.modal {
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 0;
+}
+
+.modal-form {
+  padding: 1rem 1.2rem 0.8rem;
+  min-width: 280px;
+  max-width: 420px;
+}
+
+.modal-form h3 {
+  margin-top: 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.info-text {
+  margin: 0.4rem 0;
+}
+
+.warning-text {
+  min-height: 1.2rem;
+  color: var(--pink-primary);
+  font-size: 0.8rem;
+}
