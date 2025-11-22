@@ -10,8 +10,9 @@ const firebaseConfig = {
   appId: "1:249796070916:web:f6ad4c8ec4e40206e1ef51"
 };
 
-// Initialize Firebase using the compat SDK already loaded in index.html
+// Initialize Firebase (compat SDK – no imports needed)
 firebase.initializeApp(firebaseConfig);
 
-// Create and export Firestore reference
+// Make Firestore available as a global `db`
 const db = firebase.firestore();
+
