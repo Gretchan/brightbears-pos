@@ -2,103 +2,267 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bright Bears Educare - Tuckshop POS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Chewy font for headings -->
-  <link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Chewy&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="css/styles.css?v=3" />
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css?v=4" />
 </head>
+
 <body>
+
   <div class="app-shell">
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
+
+    <!-- ============================================================
+         SIDEBAR
+    ============================================================ -->
+    <aside id="sidebar" class="sidebar">
+
       <div class="sidebar-header">
-        <!-- Make sure this file exists: assets/logo.png -->
-        <img src="assets/logo.png" alt="Bright Bears Educare Logo" class="sidebar-logo" onerror="this.style.display='none'" />
-        <div class="sidebar-title">
-          <h1>Bright Bears</h1>
-          <p>Tuckshop POS</p>
-        </div>
+        <img src="assets/logo.png" alt="Bright Bears Logo" class="sidebar-logo" />
+        <h2 class="sidebar-title">Bright Bears</h2>
+        <p class="sidebar-subtitle">Tuckshop POS</p>
       </div>
 
-    <nav class="sidebar-nav">
-  <button class="nav-btn active" onclick="switchSection('dashboard', this)">Dashboard</button>
-  <button class="nav-btn" onclick="switchSection('settings', this)">Settings</button>
-  <button class="nav-btn" onclick="switchSection('preorders', this)">Preorders</button>
-  <button class="nav-btn" onclick="switchSection('extra-orders', this)">Extra Orders</button>
-</nav>
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" onclick="switchSection('dashboard', this)">Dashboard</button>
+        <button class="nav-btn" onclick="switchSection('settings', this)">Settings</button>
+        <button class="nav-btn" onclick="switchSection('preorders', this)">Preorders</button>
+        <button class="nav-btn" onclick="switchSection('extra-orders', this)">Extra Orders</button>
+      </nav>
 
     </aside>
 
-    <!-- MAIN AREA -->
-    <div class="main-area">
-      <header class="topbar">
-        <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle menu">
-          ☰
-        </button>
-        <div class="topbar-title-block">
-          <h2>Bright Bears Educare</h2>
-          <p>Tuckshop Open Day</p>
-        </div>
+    <!-- Sidebar toggle (mobile) -->
+    <button id="sidebar-toggle" class="sidebar-toggle">☰</button>
+
+    <!-- ============================================================
+         MAIN CONTENT AREA
+    ============================================================ -->
+    <main class="main-area">
+
+      <!-- HEADER -->
+      <header class="main-header">
+        <h1>Bright Bears Educare</h1>
+        <p class="header-sub">Tuckshop Open Day</p>
       </header>
 
-      <main>
-        <!-- DASHBOARD -->
-        <section id="dashboard" class="section visible">
-          <h2>Dashboard</h2>
-          <div class="cards-grid">
-            <div class="card">
-              <h3>Total Items</h3>
-              <p id="stat-total-items">0</p>
-            </div>
-            <div class="card">
-              <h3>Preorders (count)</h3>
-              <p id="stat-total-preorders">0</p>
-            </div>
-            <div class="card">
-              <h3>Extra Orders (count)</h3>
-              <p id="stat-total-extra-orders">0</p>
-            </div>
-            <div class="card">
-              <h3>Coupons Given</h3>
-              <p id="stat-coupons-given">0</p>
-            </div>
-            <div class="card">
-              <h3>Coupons Redeemed</h3>
-              <p id="stat-coupons-redeemed">0</p>
-            </div>
-            <div class="card">
-              <h3>Preorder Stock Remaining</h3>
-              <p id="stat-preorder-remaining">0</p>
-            </div>
-            <div class="card">
-              <h3>Extra Stock Remaining</h3>
-              <p id="stat-extra-remaining">0</p>
-            </div>
-            <div class="card">
-              <h3>Estimated Revenue</h3>
-              <p id="stat-total-revenue">R 0</p>
-            </div>
-          </div>
-        </section>
+      <!-- ============================================================
+           DASHBOARD
+      ============================================================ -->
+      <section id="dashboard" class="section visible">
+        <h2 class="section-title">Dashboard</h2>
 
-        <!-- SETTINGS -->
-        <section id="settings" class="section">
-          <h2>Settings – Food Items & Stock</h2>
-          <form id="item-form" class="inline-form">
-            <input type="hidden" id="item-id" />
-            <div class="form-row">
-              <label>Item name</label>
-              <input type="text" id="item-name" required />
-            </div>
-            <div class="form-row">
-              <label>Price (R)</label>
-              <input type="number" id="item-price" min="0" step="0.01" required />
-            </div>
-            <div class="form-row">
-              <label>Total Preorder Stock</label>
-              <input type="number" id="item-preorder-stock" min="0" required />
-            </d
+        <div class="stats-grid">
+
+          <div class="stat-card">
+            <p>Total Items</p>
+            <h3 id="stat-total-items">0</h3>
+          </div>
+
+          <div class="stat-card">
+            <p>Preorders (count)</p>
+            <h3 id="stat-total-preorders">0</h3>
+          </div>
+
+          <div class="stat-card">
+            <p>Extra Orders (count)</p>
+            <h3 id="stat-total-extra-orders">0</h3>
+          </div>
+
+          <div class="stat-card">
+            <p>Coupons Given</p>
+            <h3 id="stat-coupons-given">0</h3>
+          </div>
+
+          <div class="stat-card">
+            <p>Coupons Redeemed</p>
+            <h3 id="stat-coupons-redeemed">0</h3>
+          </div>
+
+          <div class="stat-card">
+            <p>Preorder Stock Remaining</p>
+            <h3 id="stat-preorder-remaining">0</h3>
+          </div>
+
+          <div class="stat-card">
+            <p>Extra Stock Remaining</p>
+            <h3 id="stat-extra-remaining">0</h3>
+          </div>
+
+          <div class="stat-card">
+            <p>Estimated Revenue</p>
+            <h3 id="stat-total-revenue">R 0</h3>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============================================================
+           SETTINGS PAGE
+      ============================================================ -->
+      <section id="settings" class="section">
+        <h2 class="section-title">Settings</h2>
+
+        <form id="item-form" class="form-card">
+          <input type="hidden" id="item-id">
+
+          <label>Item Name</label>
+          <input type="text" id="item-name" required />
+
+          <label>Price</label>
+          <input type="number" step="0.01" id="item-price" required />
+
+          <label>Preorder Stock</label>
+          <input type="number" id="item-preorder-stock" required />
+
+          <label>Extra Stock</label>
+          <input type="number" id="item-extra-stock" required />
+
+          <div class="form-actions">
+            <button type="submit" class="primary-btn">Save Item</button>
+            <button type="button" id="item-form-reset" class="secondary-btn">Reset</button>
+          </div>
+        </form>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Price</th>
+              <th>Preorder Stock</th>
+              <th>Preorders Used</th>
+              <th>Preorder Remaining</th>
+              <th>Extra Stock</th>
+              <th>Extra Used</th>
+              <th>Extra Remaining</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="items-table-body"></tbody>
+        </table>
+      </section>
+
+      <!-- ============================================================
+           PREORDERS PAGE
+      ============================================================ -->
+      <section id="preorders" class="section">
+        <h2 class="section-title">Preorders</h2>
+
+        <button id="btn-add-preorder" class="primary-btn">Add Preorder</button>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Cost</th>
+              <th>Coupon Given</th>
+              <th>Redeemed</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="preorders-table-body"></tbody>
+        </table>
+      </section>
+
+      <!-- ============================================================
+           EXTRA ORDERS PAGE
+      ============================================================ -->
+      <section id="extra-orders" class="section">
+        <h2 class="section-title">Extra Orders</h2>
+
+        <button id="btn-add-extra" class="primary-btn">Add Extra Order</button>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Cost</th>
+              <th>Payment</th>
+              <th>Paid?</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="extra-table-body"></tbody>
+        </table>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============================================================
+       PREORDER MODAL
+  ============================================================ -->
+  <dialog id="preorder-dialog" class="modal">
+    <h3 id="preorder-dialog-title">Add Preorder</h3>
+
+    <form id="preorder-form">
+      <input type="hidden" id="preorder-id">
+
+      <label>Name</label>
+      <input type="text" id="preorder-name" required />
+
+      <label>Item</label>
+      <select id="preorder-item" required></select>
+
+      <label>Quantity</label>
+      <input type="number" id="preorder-qty" required />
+
+      <p id="preorder-cost" class="modal-cost">R 0.00</p>
+      <p id="preorder-stock-warning" class="warning-text"></p>
+
+      <div class="modal-actions">
+        <button type="submit" class="primary-btn">Save</button>
+        <button type="button" id="preorder-cancel-btn" class="secondary-btn">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ============================================================
+       EXTRA ORDER MODAL
+  ============================================================ -->
+  <dialog id="extra-dialog" class="modal">
+    <h3 id="extra-dialog-title">Add Extra Order</h3>
+
+    <form id="extra-form">
+      <input type="hidden" id="extra-id">
+
+      <label>Item</label>
+      <select id="extra-item" required></select>
+
+      <label>Quantity</label>
+      <input type="number" id="extra-qty" required />
+
+      <label>Payment Method</label>
+      <select id="extra-payment" required>
+        <option value="Cash">Cash</option>
+        <option value="Card">Card</option>
+        <option value="Both">Both</option>
+      </select>
+
+      <p id="extra-cost" class="modal-cost">R 0.00</p>
+      <p id="extra-stock-warning" class="warning-text"></p>
+
+      <div class="modal-actions">
+        <button type="submit" class="primary-btn">Save</button>
+        <button type="button" id="extra-cancel-btn" class="secondary-btn">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Firebase Config -->
+  <script src="js/firebase-config.js?v=4"></script>
+
+  <!-- Main JS -->
+  <script src="js/main.js?v=4"></script>
+
+</body>
+</html>
