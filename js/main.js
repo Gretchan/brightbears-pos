@@ -1,613 +1,741 @@
-/**********************************************************************
- *  BRIGHT BEARS TUCKSHOP POS – MAIN LOGIC (FULL VERSION)
- *  - Menu navigation fixed
- *  - Firestore defensive load (prevents app freeze)
- *  - Modals: Cancel working
- *  - Edit buttons working
- *  - Text buttons instead of icons
- *  - Sidebar toggle working
- **********************************************************************/
+// js/main.js
 
-/* ============================================================
-   FIRESTORE COLLECTIONS – Defensive so JS doesn't crash
-   ============================================================ */
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("Bright Bears POS loaded");
 
-let itemsCol, preordersCol, extraCol;
+  /* ============================================================
+     BASIC NAVIGATION & SIDEBAR – always works
+     ============================================================ */
 
-try {
-  itemsCol = db.collection("items");
-  preordersCol = db.collection("preorders");
-  extraCol = db.collection("extraOrders");
-} catch (e) {
-  console.error("❌ Firestore not initialised. Check firebase-config.js.", e);
-}
+  const sections = document.querySelectorAll(".section");
+  const navButtons = document.querySelectorAll(".nav-btn");
+  const sidebar = document.getElementById("sidebar");
+  const sidebarToggle = document.getElementById("sidebar-toggle");
 
-/* In-memory state */
-let items = [];
-let preorders = [];
-let extraOrders = [];
-
-/* ============================================================
-   SIDEBAR + NAVIGATION
-   ============================================================ */
-
-const sections = document.querySelectorAll(".section");
-const navButtons = document.querySelectorAll(".nav-btn");
-
-const sidebar = document.getElementById("sidebar");
-const sidebarToggle = document.getElementById("sidebar-toggle");
-
-/* Navigation click handler */
-navButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const target = btn.dataset.section;
-
+  function showSection(id) {
     sections.forEach((s) => s.classList.remove("visible"));
-    document.getElementById(target).classList.add("visible");
-
-    navButtons.forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-
-    if (window.innerWidth <= 900) sidebar.classList.remove("open");
-  });
-});
-
-/* Sidebar toggle (mobile) */
-if (sidebarToggle) {
-  sidebarToggle.addEventListener("click", () => {
-    sidebar.classList.toggle("open");
-  });
-}
-
-/* ============================================================
-   UTILITY FUNCTIONS
-   ============================================================ */
-
-function formatCurrency(amount) {
-  return "R " + (amount ? amount.toFixed(2) : "0.00");
-}
-
-function findItemById(id) {
-  return items.find((i) => i.id === id);
-}
-
-function calcUsageByItem() {
-  const preorderUsage = {};
-  const extraUsage = {};
-
-  preorders.forEach((p) => {
-    preorderUsage[p.itemId] = (preorderUsage[p.itemId] || 0) + p.quantity;
-  });
-
-  extraOrders.forEach((o) => {
-    extraUsage[o.itemId] = (extraUsage[o.itemId] || 0) + o.quantity;
-  });
-
-  return { preorderUsage, extraUsage };
-}
-
-/* ============================================================
-   FIRESTORE LIVE LISTENERS (defensive)
-   ============================================================ */
-
-if (itemsCol) {
-  itemsCol.onSnapshot((snapshot) => {
-    items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    renderItemsTable();
-    populateItemSelects();
-    updateDashboardStats();
-  });
-}
-
-if (preordersCol) {
-  preordersCol.orderBy("createdAt").onSnapshot((snapshot) => {
-    preorders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    renderPreordersTable();
-    updateDashboardStats();
-  });
-}
-
-if (extraCol) {
-  extraCol.orderBy("createdAt").onSnapshot((snapshot) => {
-    extraOrders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    renderExtraTable();
-    updateDashboardStats();
-  });
-}
-
-/* ============================================================
-   SETTINGS PAGE – Add/Edit/Delete Items
-   ============================================================ */
-
-const itemForm = document.getElementById("item-form");
-const itemFormReset = document.getElementById("item-form-reset");
-const itemsTable = document.getElementById("items-table-body");
-
-itemForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const id = document.getElementById("item-id").value || null;
-
-  const itemData = {
-    name: document.getElementById("item-name").value.trim(),
-    price: parseFloat(document.getElementById("item-price").value),
-    preorderStock: parseInt(document.getElementById("item-preorder-stock").value),
-    extraStock: parseInt(document.getElementById("item-extra-stock").value),
-  };
-
-  try {
-    if (id) {
-      await itemsCol.doc(id).set(itemData, { merge: true });
-    } else {
-      await itemsCol.add(itemData);
-    }
-    itemForm.reset();
-    document.getElementById("item-id").value = "";
-  } catch (err) {
-    alert("Error saving item: " + err.message);
+    const target = document.getElementById(id);
+    if (target) target.classList.add("visible");
   }
-});
 
-itemFormReset.addEventListener("click", () => {
-  itemForm.reset();
-  document.getElementById("item-id").value = "";
-});
+  navButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const sectionId = btn.dataset.section;
+      if (!sectionId) return;
 
-function renderItemsTable() {
-  const { preorderUsage, extraUsage } = calcUsageByItem();
-  itemsTable.innerHTML = "";
+      showSection(sectionId);
+      navButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
 
-  items.forEach((item) => {
-    const usedPre = preorderUsage[item.id] || 0;
-    const usedExtra = extraUsage[item.id] || 0;
-
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td>${item.name}</td>
-      <td>${item.price.toFixed(2)}</td>
-      <td>${item.preorderStock}</td>
-      <td>${usedPre}</td>
-      <td>${item.preorderStock - usedPre}</td>
-      <td>${item.extraStock}</td>
-      <td>${usedExtra}</td>
-      <td>${item.extraStock - usedExtra}</td>
-      <td>
-        <button class="secondary-btn btn-small" data-action="edit" data-id="${item.id}">Edit</button>
-        <button class="secondary-btn btn-small" data-action="delete" data-id="${item.id}">Delete</button>
-      </td>
-    `;
-
-    itemsTable.appendChild(row);
-  });
-
-  /* Actions */
-  itemsTable.querySelectorAll("button").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.id;
-      const item = findItemById(id);
-
-      if (btn.dataset.action === "edit") {
-        document.getElementById("item-id").value = id;
-        document.getElementById("item-name").value = item.name;
-        document.getElementById("item-price").value = item.price;
-        document.getElementById("item-preorder-stock").value = item.preorderStock;
-        document.getElementById("item-extra-stock").value = item.extraStock;
-      }
-
-      if (btn.dataset.action === "delete") {
-        if (confirm(`Delete "${item.name}"?`)) await itemsCol.doc(id).delete();
+      if (window.innerWidth <= 900 && sidebar) {
+        sidebar.classList.remove("open");
       }
     });
   });
-}
 
-/* ============================================================
-   PREORDERS PAGE – Modal + Table + Logic
-   ============================================================ */
+  if (sidebarToggle && sidebar) {
+    sidebarToggle.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+    });
+  }
 
-const preorderDialog = document.getElementById("preorder-dialog");
-const preorderForm = document.getElementById("preorder-form");
-const preorderCancel = document.getElementById("preorder-cancel-btn");
+  // Make sure dashboard shows on first load
+  showSection("dashboard");
 
-const preorderItem = document.getElementById("preorder-item");
-const preorderQty = document.getElementById("preorder-qty");
-const preorderName = document.getElementById("preorder-name");
-const preorderCost = document.getElementById("preorder-cost");
-const preorderWarning = document.getElementById("preorder-stock-warning");
+  /* ============================================================
+     GLOBAL STATE & HELPERS
+     ============================================================ */
 
-document.getElementById("btn-add-preorder").addEventListener("click", () => {
-  openPreorderDialog();
-});
+  let items = [];
+  let preorders = [];
+  let extraOrders = [];
 
-preorderCancel.addEventListener("click", () => {
-  preorderForm.reset();
-  preorderDialog.close();
-});
+  let itemsCol = null;
+  let preordersCol = null;
+  let extraCol = null;
 
-function openPreorderDialog(existing = null) {
-  preorderForm.reset();
-  preorderWarning.textContent = "";
-
-  document.getElementById("preorder-id").value = existing ? existing.id : "";
-
-  document.getElementById("preorder-dialog-title").textContent =
-    existing ? "Edit Preorder" : "Add Preorder";
-
-  if (existing) {
-    preorderName.value = existing.name;
-    preorderItem.value = existing.itemId;
-    preorderQty.value = existing.quantity;
-    updatePreorderCost();
+  if (window.db && typeof window.db.collection === "function") {
+    try {
+      itemsCol = db.collection("items");
+      preordersCol = db.collection("preorders");
+      extraCol = db.collection("extraOrders");
+      console.log("Firestore collections initialised");
+    } catch (e) {
+      console.error("Error initialising Firestore collections:", e);
+    }
   } else {
-    preorderCost.textContent = "R 0.00";
+    console.warn("db is not available. Check firebase-config.js and script order.");
   }
 
-  preorderDialog.showModal();
-}
-
-/* Cost + stock calculation */
-function updatePreorderCost() {
-  const item = findItemById(preorderItem.value);
-  const qty = parseInt(preorderQty.value || 0);
-
-  if (!item || !qty) {
-    preorderCost.textContent = "R 0.00";
-    preorderWarning.textContent = "";
-    return;
+  function formatCurrency(num) {
+    return "R " + (num ? num.toFixed(2) : "0.00");
   }
 
-  const { preorderUsage } = calcUsageByItem();
-  let used = preorderUsage[item.id] || 0;
-
-  const editingId = document.getElementById("preorder-id").value;
-  if (editingId) {
-    const existing = preorders.find((p) => p.id === editingId);
-    if (existing && existing.itemId === item.id) used -= existing.quantity;
+  function findItemById(id) {
+    return items.find((i) => i.id === id) || null;
   }
 
-  const before = item.preorderStock - used;
-  const after = before - qty;
+  function calcUsageByItem() {
+    const preorderUsage = {};
+    const extraUsage = {};
 
-  preorderCost.textContent = formatCurrency(item.price * qty);
-
-  if (before <= 0) preorderWarning.textContent = "No preorder stock left.";
-  else if (after < 0) preorderWarning.textContent = `Only ${before} left.`;
-  else preorderWarning.textContent = `Stock after: ${after}`;
-}
-
-preorderItem.addEventListener("change", updatePreorderCost);
-preorderQty.addEventListener("input", updatePreorderCost);
-
-/* Save preorder */
-preorderForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const id = document.getElementById("preorder-id").value || null;
-  const item = findItemById(preorderItem.value);
-  const qty = parseInt(preorderQty.value);
-
-  const data = {
-    name: preorderName.value.trim(),
-    itemId: preorderItem.value,
-    quantity: qty,
-    cost: item.price * qty,
-    couponGiven: id ? undefined : false,
-    couponRedeemed: id ? undefined : false,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-  };
-
-  try {
-    if (id) {
-      delete data.createdAt;
-      await preordersCol.doc(id).set(data, { merge: true });
-    } else {
-      data.couponGiven = false;
-      data.couponRedeemed = false;
-      await preordersCol.add(data);
-    }
-    preorderDialog.close();
-  } catch (err) {
-    alert("Error saving preorder: " + err.message);
-  }
-});
-
-/* Render table */
-function renderPreordersTable() {
-  const tbody = document.getElementById("preorders-table-body");
-  tbody.innerHTML = "";
-
-  let totalValue = 0;
-
-  preorders.forEach((p, index) => {
-    totalValue += p.cost || 0;
-    const item = findItemById(p.itemId);
-
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${index + 1}</td>
-      <td>${p.name}</td>
-      <td>${item ? item.name : "?"}</td>
-      <td>${p.quantity}</td>
-      <td>${p.cost.toFixed(2)}</td>
-      <td>
-        <span class="badge-toggle ${p.couponGiven ? "on" : "off"}"
-          data-id="${p.id}"
-          data-action="toggle-given">
-          ${p.couponGiven ? "Yes" : "No"}
-        </span>
-      </td>
-      <td>
-        <span class="badge-toggle ${p.couponRedeemed ? "on" : "off"}"
-          data-id="${p.id}"
-          data-action="toggle-redeemed">
-          ${p.couponRedeemed ? "Yes" : "No"}
-        </span>
-      </td>
-      <td>
-        <button class="secondary-btn btn-small" data-action="edit" data-id="${p.id}">Edit</button>
-        <button class="secondary-btn btn-small" data-action="delete" data-id="${p.id}">Delete</button>
-      </td>
-    `;
-    tbody.appendChild(row);
-  });
-
-  /* Update summary */
-  document.getElementById("preorders-count").textContent = preorders.length;
-  document.getElementById("preorders-value").textContent = formatCurrency(totalValue);
-
-  /* Toggles */
-  tbody.querySelectorAll(".badge-toggle").forEach((badge) => {
-    badge.addEventListener("click", async () => {
-      const id = badge.dataset.id;
-      const order = preorders.find((o) => o.id === id);
-
-      const update = {};
-      update[badge.dataset.action === "toggle-given" ? "couponGiven" : "couponRedeemed"] =
-        !order[badge.dataset.action === "toggle-given" ? "couponGiven" : "couponRedeemed"];
-
-      await preordersCol.doc(id).set(update, { merge: true });
+    preorders.forEach((p) => {
+      preorderUsage[p.itemId] = (preorderUsage[p.itemId] || 0) + p.quantity;
     });
-  });
 
-  /* Edit & delete buttons */
-  tbody.querySelectorAll("button").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.id;
-      const order = preorders.find((o) => o.id === id);
-
-      if (btn.dataset.action === "edit") {
-        openPreorderDialog(order);
-      } else if (btn.dataset.action === "delete") {
-        if (confirm("Delete this preorder?")) await preordersCol.doc(id).delete();
-      }
+    extraOrders.forEach((o) => {
+      extraUsage[o.itemId] = (extraUsage[o.itemId] || 0) + o.quantity;
     });
-  });
-}
 
-/* ============================================================
-   EXTRA ORDERS – Modal + Table + Logic
-   ============================================================ */
-
-const extraDialog = document.getElementById("extra-dialog");
-const extraForm = document.getElementById("extra-form");
-const extraCancel = document.getElementById("extra-cancel-btn");
-
-const extraItem = document.getElementById("extra-item");
-const extraQty = document.getElementById("extra-qty");
-const extraPayment = document.getElementById("extra-payment");
-const extraCost = document.getElementById("extra-cost");
-const extraWarning = document.getElementById("extra-stock-warning");
-
-document.getElementById("btn-add-extra").addEventListener("click", () => {
-  openExtraDialog();
-});
-
-extraCancel.addEventListener("click", () => {
-  extraForm.reset();
-  extraDialog.close();
-});
-
-function openExtraDialog(existing = null) {
-  extraForm.reset();
-  extraWarning.textContent = "";
-
-  document.getElementById("extra-id").value = existing ? existing.id : "";
-
-  document.getElementById("extra-dialog-title").textContent =
-    existing ? "Edit Extra Order" : "Add Extra Order";
-
-  if (existing) {
-    extraItem.value = existing.itemId;
-    extraQty.value = existing.quantity;
-    extraPayment.value = existing.paymentMethod;
-    updateExtraCost();
-  } else {
-    extraCost.textContent = "R 0.00";
+    return { preorderUsage, extraUsage };
   }
 
-  extraDialog.showModal();
-}
+  /* ============================================================
+     DOM REFERENCES (with safety checks)
+     ============================================================ */
 
-/* Cost calculation for extra orders */
-function updateExtraCost() {
-  const item = findItemById(extraItem.value);
-  const qty = parseInt(extraQty.value || 0);
+  // Settings
+  const itemForm = document.getElementById("item-form");
+  const itemFormReset = document.getElementById("item-form-reset");
+  const itemsTableBody = document.getElementById("items-table-body");
 
-  if (!item || !qty) {
-    extraCost.textContent = "R 0.00";
-    extraWarning.textContent = "";
-    return;
-  }
+  // Preorders
+  const preorderDialog = document.getElementById("preorder-dialog");
+  const preorderForm = document.getElementById("preorder-form");
+  const preorderCancelBtn = document.getElementById("preorder-cancel-btn");
+  const btnAddPreorder = document.getElementById("btn-add-preorder");
 
-  const { extraUsage } = calcUsageByItem();
-  let used = extraUsage[item.id] || 0;
+  const preorderIdInput = document.getElementById("preorder-id");
+  const preorderNameInput = document.getElementById("preorder-name");
+  const preorderItemSelect = document.getElementById("preorder-item");
+  const preorderQtyInput = document.getElementById("preorder-qty");
+  const preorderCostLabel = document.getElementById("preorder-cost");
+  const preorderWarning = document.getElementById("preorder-stock-warning");
 
-  const editingId = document.getElementById("extra-id").value;
-  if (editingId) {
-    const existing = extraOrders.find((o) => o.id === editingId);
-    if (existing && existing.itemId === item.id) used -= existing.quantity;
-  }
+  // Extra Orders
+  const extraDialog = document.getElementById("extra-dialog");
+  const extraForm = document.getElementById("extra-form");
+  const extraCancelBtn = document.getElementById("extra-cancel-btn");
+  const btnAddExtra = document.getElementById("btn-add-extra");
 
-  const before = item.extraStock - used;
-  const after = before - qty;
+  const extraIdInput = document.getElementById("extra-id");
+  const extraItemSelect = document.getElementById("extra-item");
+  const extraQtyInput = document.getElementById("extra-qty");
+  const extraPaymentSelect = document.getElementById("extra-payment");
+  const extraCostLabel = document.getElementById("extra-cost");
+  const extraWarning = document.getElementById("extra-stock-warning");
 
-  extraCost.textContent = formatCurrency(item.price * qty);
+  // Dashboard stats
+  const statTotalItems = document.getElementById("stat-total-items");
+  const statTotalPreorders = document.getElementById("stat-total-preorders");
+  const statTotalExtra = document.getElementById("stat-total-extra-orders");
+  const statPreRemaining = document.getElementById("stat-preorder-remaining");
+  const statExtraRemaining = document.getElementById("stat-extra-remaining");
+  const statCouponsGiven = document.getElementById("stat-coupons-given");
+  const statCouponsRedeemed = document.getElementById("stat-coupons-redeemed");
+  const statTotalRevenue = document.getElementById("stat-total-revenue");
 
-  if (before <= 0) extraWarning.textContent = "No extra stock left.";
-  else if (after < 0) extraWarning.textContent = `Only ${before} left.`;
-  else extraWarning.textContent = `Stock after: ${after}`;
-}
+  /* ============================================================
+     FIRESTORE LISTENERS – only if collections exist
+     ============================================================ */
 
-extraItem.addEventListener("change", updateExtraCost);
-extraQty.addEventListener("input", updateExtraCost);
-
-/* Save extra orders */
-extraForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const id = document.getElementById("extra-id").value || null;
-  const item = findItemById(extraItem.value);
-  const qty = parseInt(extraQty.value);
-
-  const data = {
-    itemId: extraItem.value,
-    quantity: qty,
-    paymentMethod: extraPayment.value,
-    cost: item.price * qty,
-    paid: id ? undefined : false,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-  };
-
-  try {
-    if (id) {
-      delete data.createdAt;
-      await extraCol.doc(id).set(data, { merge: true });
-    } else {
-      data.paid = false;
-      await extraCol.add(data);
-    }
-    extraDialog.close();
-  } catch (err) {
-    alert("Error saving order: " + err.message);
-  }
-});
-
-/* Render extra orders table */
-function renderExtraTable() {
-  const tbody = document.getElementById("extra-table-body");
-  tbody.innerHTML = "";
-
-  let totalValue = 0;
-
-  extraOrders.forEach((o, index) => {
-    totalValue += o.cost || 0;
-    const item = findItemById(o.itemId);
-
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${index + 1}</td>
-      <td>${item ? item.name : "?"}</td>
-      <td>${o.quantity}</td>
-      <td>${o.cost.toFixed(2)}</td>
-      <td>${o.paymentMethod}</td>
-      <td>
-        <span class="badge-toggle ${o.paid ? "on" : "off"}"
-          data-id="${o.id}"
-          data-action="toggle-paid">
-          ${o.paid ? "Yes" : "No"}
-        </span>
-      </td>
-      <td>
-        <button class="secondary-btn btn-small" data-action="edit" data-id="${o.id}">Edit</button>
-        <button class="secondary-btn btn-small" data-action="delete" data-id="${o.id}">Delete</button>
-      </td>
-    `;
-    tbody.appendChild(row);
-  });
-
-  document.getElementById("extra-count").textContent = extraOrders.length;
-  document.getElementById("extra-value").textContent = formatCurrency(totalValue);
-
-  /* Toggle paid */
-  tbody.querySelectorAll(".badge-toggle").forEach((badge) => {
-    badge.addEventListener("click", async () => {
-      const id = badge.dataset.id;
-      const order = extraOrders.find((o) => o.id === id);
-      await extraCol.doc(id).set({ paid: !order.paid }, { merge: true });
+  if (itemsCol) {
+    itemsCol.onSnapshot((snapshot) => {
+      items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      renderItemsTable();
+      populateItemSelects();
+      updateDashboardStats();
     });
-  });
+  }
 
-  /* Edit / Delete */
-  tbody.querySelectorAll("button").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.id;
-      const order = extraOrders.find((o) => o.id === id);
+  if (preordersCol) {
+    preordersCol.orderBy("createdAt").onSnapshot((snapshot) => {
+      preorders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      renderPreordersTable();
+      updateDashboardStats();
+    });
+  }
 
-      if (btn.dataset.action === "edit") {
-        openExtraDialog(order);
-      } else if (btn.dataset.action === "delete") {
-        if (confirm("Delete this order?")) {
-          await extraCol.doc(id).delete();
+  if (extraCol) {
+    extraCol.orderBy("createdAt").onSnapshot((snapshot) => {
+      extraOrders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      renderExtraTable();
+      updateDashboardStats();
+    });
+  }
+
+  /* ============================================================
+     SETTINGS PAGE – ADD / EDIT / DELETE ITEMS
+     ============================================================ */
+
+  if (itemForm && itemsTableBody) {
+    itemForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!itemsCol) return alert("Database not ready yet.");
+
+      const id = document.getElementById("item-id").value || null;
+      const name = document.getElementById("item-name").value.trim();
+      const price = parseFloat(document.getElementById("item-price").value || "0");
+      const preorderStock = parseInt(document.getElementById("item-preorder-stock").value || "0", 10);
+      const extraStock = parseInt(document.getElementById("item-extra-stock").value || "0", 10);
+
+      const data = { name, price, preorderStock, extraStock };
+
+      try {
+        if (id) {
+          await itemsCol.doc(id).set(data, { merge: true });
+        } else {
+          await itemsCol.add(data);
         }
+        itemForm.reset();
+        document.getElementById("item-id").value = "";
+      } catch (err) {
+        alert("Error saving item: " + err.message);
       }
     });
-  });
-}
 
-/* ============================================================
-   POPULATE ITEM SELECT DROPDOWNS
-   ============================================================ */
+    if (itemFormReset) {
+      itemFormReset.addEventListener("click", () => {
+        itemForm.reset();
+        document.getElementById("item-id").value = "";
+      });
+    }
+  }
 
-function populateItemSelects() {
-  const selects = [preorderItem, extraItem];
-
-  selects.forEach((sel) => {
-    sel.innerHTML = "<option value='' disabled selected>-- Select item --</option>";
+  function renderItemsTable() {
+    if (!itemsTableBody) return;
+    const { preorderUsage, extraUsage } = calcUsageByItem();
+    itemsTableBody.innerHTML = "";
 
     items.forEach((item) => {
-      const option = document.createElement("option");
-      option.value = item.id;
-      option.textContent = `${item.name} (R${item.price.toFixed(2)})`;
-      sel.appendChild(option);
+      const usedPre = preorderUsage[item.id] || 0;
+      const usedExtra = extraUsage[item.id] || 0;
+
+      const remainingPre = item.preorderStock - usedPre;
+      const remainingExtra = item.extraStock - usedExtra;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${item.name}</td>
+        <td>${item.price.toFixed(2)}</td>
+        <td>${item.preorderStock}</td>
+        <td>${usedPre}</td>
+        <td>${remainingPre}</td>
+        <td>${item.extraStock}</td>
+        <td>${usedExtra}</td>
+        <td>${remainingExtra}</td>
+        <td>
+          <button class="secondary-btn btn-small" data-action="edit" data-id="${item.id}">Edit</button>
+          <button class="secondary-btn btn-small" data-action="delete" data-id="${item.id}">Delete</button>
+        </td>
+      `;
+      itemsTableBody.appendChild(tr);
     });
-  });
-}
 
-/* ============================================================
-   DASHBOARD STATS
-   ============================================================ */
+    itemsTableBody.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!itemsCol) return;
+        const id = btn.dataset.id;
+        const action = btn.dataset.action;
+        const item = findItemById(id);
+        if (!item) return;
 
-function updateDashboardStats() {
-  const { preorderUsage, extraUsage } = calcUsageByItem();
+        if (action === "edit") {
+          document.getElementById("item-id").value = id;
+          document.getElementById("item-name").value = item.name;
+          document.getElementById("item-price").value = item.price;
+          document.getElementById("item-preorder-stock").value = item.preorderStock;
+          document.getElementById("item-extra-stock").value = item.extraStock;
+        } else if (action === "delete") {
+          if (confirm(`Delete item "${item.name}"?`)) {
+            await itemsCol.doc(id).delete();
+          }
+        }
+      });
+    });
+  }
 
-  let preorderRemaining = 0;
-  let extraRemaining = 0;
-  let totalRevenue = 0;
-  let couponsGiven = 0;
-  let couponsRedeemed = 0;
+  /* ============================================================
+     PREORDERS – MODAL + TABLE
+     ============================================================ */
 
-  items.forEach((item) => {
-    preorderRemaining += Math.max(item.preorderStock - (preorderUsage[item.id] || 0), 0);
-    extraRemaining += Math.max(item.extraStock - (extraUsage[item.id] || 0), 0);
-  });
+  if (btnAddPreorder && preorderDialog && preorderForm) {
+    btnAddPreorder.addEventListener("click", () => openPreorderDialog());
+  }
 
-  preorders.forEach((p) => {
-    totalRevenue += p.cost || 0;
-    if (p.couponGiven) couponsGiven++;
-    if (p.couponRedeemed) couponsRedeemed++;
-  });
+  if (preorderCancelBtn && preorderDialog && preorderForm) {
+    preorderCancelBtn.addEventListener("click", () => {
+      preorderForm.reset();
+      preorderWarning && (preorderWarning.textContent = "");
+      preorderDialog.close();
+    });
+  }
 
-  extraOrders.forEach((o) => {
-    totalRevenue += o.cost || 0;
-  });
+  function openPreorderDialog(existing = null) {
+    if (!preorderDialog || !preorderForm) return;
+    preorderForm.reset();
+    if (preorderWarning) preorderWarning.textContent = "";
 
-  document.getElementById("stat-total-items").textContent = items.length;
-  document.getElementById("stat-total-preorders").textContent = preorders.length;
-  document.getElementById("stat-total-extra-orders").textContent = extraOrders.length;
-  document.getElementById("stat-preorder-remaining").textContent = preorderRemaining;
-  document.getElementById("stat-extra-remaining").textContent = extraRemaining;
-  document.getElementById("stat-coupons-given").textContent = couponsGiven;
-  document.getElementById("stat-coupons-redeemed").textContent = couponsRedeemed;
-  document.getElementById("stat-total-revenue").textContent = formatCurrency(totalRevenue);
-}
+    const idField = preorderIdInput;
+    const titleEl = document.getElementById("preorder-dialog-title");
+
+    if (idField) idField.value = existing ? existing.id : "";
+    if (titleEl) titleEl.textContent = existing ? "Edit Preorder" : "Add Preorder";
+
+    if (existing) {
+      if (preorderNameInput) preorderNameInput.value = existing.name;
+      if (preorderItemSelect) preorderItemSelect.value = existing.itemId;
+      if (preorderQtyInput) preorderQtyInput.value = existing.quantity;
+      updatePreorderCost();
+    } else {
+      if (preorderCostLabel) preorderCostLabel.textContent = "R 0.00";
+    }
+
+    if (typeof preorderDialog.showModal === "function") {
+      preorderDialog.showModal();
+    } else {
+      alert("Your browser does not support dialogs.");
+    }
+  }
+
+  function updatePreorderCost() {
+    if (!preorderItemSelect || !preorderQtyInput || !preorderCostLabel) return;
+    const item = findItemById(preorderItemSelect.value);
+    const qty = parseInt(preorderQtyInput.value || "0", 10);
+
+    if (!item || !qty) {
+      preorderCostLabel.textContent = "R 0.00";
+      if (preorderWarning) preorderWarning.textContent = "";
+      return;
+    }
+
+    const { preorderUsage } = calcUsageByItem();
+    let usedPre = preorderUsage[item.id] || 0;
+    const editingId = preorderIdInput ? preorderIdInput.value : "";
+
+    if (editingId) {
+      const existing = preorders.find((p) => p.id === editingId);
+      if (existing && existing.itemId === item.id) {
+        usedPre -= existing.quantity;
+      }
+    }
+
+    const remainingBefore = item.preorderStock - usedPre;
+    const remainingAfter = remainingBefore - qty;
+
+    preorderCostLabel.textContent = formatCurrency(item.price * qty);
+
+    if (preorderWarning) {
+      if (remainingBefore <= 0) {
+        preorderWarning.textContent = `No preorder stock left for ${item.name}.`;
+      } else if (remainingAfter < 0) {
+        preorderWarning.textContent = `Only ${remainingBefore} left. Reduce quantity.`;
+      } else {
+        preorderWarning.textContent = `Stock before: ${remainingBefore}, after this order: ${remainingAfter}.`;
+      }
+    }
+  }
+
+  if (preorderItemSelect) preorderItemSelect.addEventListener("change", updatePreorderCost);
+  if (preorderQtyInput) preorderQtyInput.addEventListener("input", updatePreorderCost);
+
+  if (preorderForm) {
+    preorderForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!preordersCol) return alert("Database not ready yet.");
+      if (!preorderItemSelect || !preorderQtyInput || !preorderNameInput) return;
+
+      const id = preorderIdInput ? preorderIdInput.value || null : null;
+      const itemId = preorderItemSelect.value;
+      const qty = parseInt(preorderQtyInput.value || "0", 10);
+      const item = findItemById(itemId);
+      if (!item) return alert("Please select an item.");
+
+      const { preorderUsage } = calcUsageByItem();
+      let usedPre = preorderUsage[item.id] || 0;
+
+      if (id) {
+        const existing = preorders.find((p) => p.id === id);
+        if (existing && existing.itemId === item.id) {
+          usedPre -= existing.quantity;
+        }
+      }
+
+      const remainingBefore = item.preorderStock - usedPre;
+      if (qty > remainingBefore) {
+        return alert(`Not enough preorder stock. Only ${remainingBefore} left.`);
+      }
+
+      const data = {
+        name: preorderNameInput.value.trim(),
+        itemId,
+        quantity: qty,
+        cost: item.price * qty,
+        createdAt: window.firebase
+          ? firebase.firestore.FieldValue.serverTimestamp()
+          : null,
+      };
+
+      try {
+        if (id) {
+          await preordersCol.doc(id).set(data, { merge: true });
+        } else {
+          data.couponGiven = false;
+          data.couponRedeemed = false;
+          await preordersCol.add(data);
+        }
+        preorderDialog.close();
+      } catch (err) {
+        alert("Error saving preorder: " + err.message);
+      }
+    });
+  }
+
+  function renderPreordersTable() {
+    const tbody = document.getElementById("preorders-table-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    let totalValue = 0;
+
+    preorders.forEach((order, index) => {
+      totalValue += order.cost || 0;
+      const item = findItemById(order.itemId);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${order.name}</td>
+        <td>${item ? item.name : "?"}</td>
+        <td>${order.quantity}</td>
+        <td>${(order.cost || 0).toFixed(2)}</td>
+        <td>
+          <span class="badge-toggle ${order.couponGiven ? "on" : "off"}"
+                data-action="toggle-given" data-id="${order.id}">
+            ${order.couponGiven ? "Yes" : "No"}
+          </span>
+        </td>
+        <td>
+          <span class="badge-toggle ${order.couponRedeemed ? "on" : "off"}"
+                data-action="toggle-redeemed" data-id="${order.id}">
+            ${order.couponRedeemed ? "Yes" : "No"}
+          </span>
+        </td>
+        <td>
+          <button class="secondary-btn btn-small" data-action="edit" data-id="${order.id}">Edit</button>
+          <button class="secondary-btn btn-small" data-action="delete" data-id="${order.id}">Delete</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const preCount = document.getElementById("preorders-count");
+    const preValue = document.getElementById("preorders-value");
+    if (preCount) preCount.textContent = preorders.length;
+    if (preValue) preValue.textContent = formatCurrency(totalValue);
+
+    // Toggles
+    tbody.querySelectorAll(".badge-toggle").forEach((badge) => {
+      badge.addEventListener("click", async () => {
+        if (!preordersCol) return;
+        const id = badge.dataset.id;
+        const action = badge.dataset.action;
+        const order = preorders.find((p) => p.id === id);
+        if (!order) return;
+
+        const updates = {};
+        if (action === "toggle-given") updates.couponGiven = !order.couponGiven;
+        if (action === "toggle-redeemed")
+          updates.couponRedeemed = !order.couponRedeemed;
+
+        await preordersCol.doc(id).set(updates, { merge: true });
+      });
+    });
+
+    // Edit / delete
+    tbody.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!preordersCol) return;
+        const id = btn.dataset.id;
+        const action = btn.dataset.action;
+        const order = preorders.find((p) => p.id === id);
+        if (!order) return;
+
+        if (action === "edit") {
+          openPreorderDialog(order);
+        } else if (action === "delete") {
+          if (confirm("Delete this preorder?")) {
+            await preordersCol.doc(id).delete();
+          }
+        }
+      });
+    });
+  }
+
+  /* ============================================================
+     EXTRA ORDERS – MODAL + TABLE
+     ============================================================ */
+
+  if (btnAddExtra && extraDialog && extraForm) {
+    btnAddExtra.addEventListener("click", () => openExtraDialog());
+  }
+
+  if (extraCancelBtn && extraDialog && extraForm) {
+    extraCancelBtn.addEventListener("click", () => {
+      extraForm.reset();
+      extraWarning && (extraWarning.textContent = "");
+      extraDialog.close();
+    });
+  }
+
+  function openExtraDialog(existing = null) {
+    if (!extraDialog || !extraForm) return;
+    extraForm.reset();
+    if (extraWarning) extraWarning.textContent = "";
+
+    if (extraIdInput) extraIdInput.value = existing ? existing.id : "";
+    const titleEl = document.getElementById("extra-dialog-title");
+    if (titleEl) titleEl.textContent = existing ? "Edit Extra Order" : "Add Extra Order";
+
+    if (existing) {
+      if (extraItemSelect) extraItemSelect.value = existing.itemId;
+      if (extraQtyInput) extraQtyInput.value = existing.quantity;
+      if (extraPaymentSelect) extraPaymentSelect.value = existing.paymentMethod;
+      updateExtraCost();
+    } else if (extraCostLabel) {
+      extraCostLabel.textContent = "R 0.00";
+    }
+
+    if (typeof extraDialog.showModal === "function") {
+      extraDialog.showModal();
+    } else {
+      alert("Your browser does not support dialogs.");
+    }
+  }
+
+  function updateExtraCost() {
+    if (!extraItemSelect || !extraQtyInput || !extraCostLabel) return;
+    const item = findItemById(extraItemSelect.value);
+    const qty = parseInt(extraQtyInput.value || "0", 10);
+
+    if (!item || !qty) {
+      extraCostLabel.textContent = "R 0.00";
+      if (extraWarning) extraWarning.textContent = "";
+      return;
+    }
+
+    const { extraUsage } = calcUsageByItem();
+    let usedExtra = extraUsage[item.id] || 0;
+    const editingId = extraIdInput ? extraIdInput.value : "";
+
+    if (editingId) {
+      const existing = extraOrders.find((o) => o.id === editingId);
+      if (existing && existing.itemId === item.id) {
+        usedExtra -= existing.quantity;
+      }
+    }
+
+    const remainingBefore = item.extraStock - usedExtra;
+    const remainingAfter = remainingBefore - qty;
+
+    extraCostLabel.textContent = formatCurrency(item.price * qty);
+
+    if (extraWarning) {
+      if (remainingBefore <= 0) {
+        extraWarning.textContent = `No extra stock left for ${item.name}.`;
+      } else if (remainingAfter < 0) {
+        extraWarning.textContent = `Only ${remainingBefore} left. Reduce quantity.`;
+      } else {
+        extraWarning.textContent = `Stock before: ${remainingBefore}, after this order: ${remainingAfter}.`;
+      }
+    }
+  }
+
+  if (extraItemSelect) extraItemSelect.addEventListener("change", updateExtraCost);
+  if (extraQtyInput) extraQtyInput.addEventListener("input", updateExtraCost);
+
+  if (extraForm) {
+    extraForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!extraCol) return alert("Database not ready yet.");
+      if (!extraItemSelect || !extraQtyInput || !extraPaymentSelect) return;
+
+      const id = extraIdInput ? extraIdInput.value || null : null;
+      const itemId = extraItemSelect.value;
+      const qty = parseInt(extraQtyInput.value || "0", 10);
+      const payment = extraPaymentSelect.value;
+      const item = findItemById(itemId);
+      if (!item) return alert("Please select an item.");
+
+      const { extraUsage } = calcUsageByItem();
+      let usedExtra = extraUsage[item.id] || 0;
+
+      if (id) {
+        const existing = extraOrders.find((o) => o.id === id);
+        if (existing && existing.itemId === item.id) {
+          usedExtra -= existing.quantity;
+        }
+      }
+
+      const remainingBefore = item.extraStock - usedExtra;
+      if (qty > remainingBefore) {
+        return alert(`Not enough extra stock. Only ${remainingBefore} left.`);
+      }
+
+      const data = {
+        itemId,
+        quantity: qty,
+        paymentMethod: payment,
+        cost: item.price * qty,
+        createdAt: window.firebase
+          ? firebase.firestore.FieldValue.serverTimestamp()
+          : null,
+      };
+
+      try {
+        if (id) {
+          await extraCol.doc(id).set(data, { merge: true });
+        } else {
+          data.paid = false;
+          await extraCol.add(data);
+        }
+        extraDialog.close();
+      } catch (err) {
+        alert("Error saving extra order: " + err.message);
+      }
+    });
+  }
+
+  function renderExtraTable() {
+    const tbody = document.getElementById("extra-table-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    let totalValue = 0;
+
+    extraOrders.forEach((order, index) => {
+      totalValue += order.cost || 0;
+      const item = findItemById(order.itemId);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${item ? item.name : "?"}</td>
+        <td>${order.quantity}</td>
+        <td>${(order.cost || 0).toFixed(2)}</td>
+        <td>${order.paymentMethod}</td>
+        <td>
+          <span class="badge-toggle ${order.paid ? "on" : "off"}"
+                data-action="toggle-paid" data-id="${order.id}">
+            ${order.paid ? "Yes" : "No"}
+          </span>
+        </td>
+        <td>
+          <button class="secondary-btn btn-small" data-action="edit" data-id="${order.id}">Edit</button>
+          <button class="secondary-btn btn-small" data-action="delete" data-id="${order.id}">Delete</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const extraCount = document.getElementById("extra-count");
+    const extraValue = document.getElementById("extra-value");
+    if (extraCount) extraCount.textContent = extraOrders.length;
+    if (extraValue) extraValue.textContent = formatCurrency(totalValue);
+
+    tbody.querySelectorAll(".badge-toggle").forEach((badge) => {
+      badge.addEventListener("click", async () => {
+        if (!extraCol) return;
+        const id = badge.dataset.id;
+        const order = extraOrders.find((o) => o.id === id);
+        if (!order) return;
+        await extraCol.doc(id).set({ paid: !order.paid }, { merge: true });
+      });
+    });
+
+    tbody.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!extraCol) return;
+        const id = btn.dataset.id;
+        const action = btn.dataset.action;
+        const order = extraOrders.find((o) => o.id === id);
+        if (!order) return;
+
+        if (action === "edit") {
+          openExtraDialog(order);
+        } else if (action === "delete") {
+          if (confirm("Delete this extra order?")) {
+            await extraCol.doc(id).delete();
+          }
+        }
+      });
+    });
+  }
+
+  /* ============================================================
+     POPULATE DROPDOWNS + DASHBOARD
+     ============================================================ */
+
+  function populateItemSelects() {
+    const selects = [preorderItemSelect, extraItemSelect];
+    selects.forEach((sel) => {
+      if (!sel) return;
+      sel.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "-- Select item --";
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      sel.appendChild(placeholder);
+
+      items.forEach((item) => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = `${item.name} (R${item.price.toFixed(2)})`;
+        sel.appendChild(opt);
+      });
+    });
+  }
+
+  function updateDashboardStats() {
+    if (
+      !statTotalItems ||
+      !statTotalPreorders ||
+      !statTotalExtra ||
+      !statPreRemaining ||
+      !statExtraRemaining ||
+      !statCouponsGiven ||
+      !statCouponsRedeemed ||
+      !statTotalRevenue
+    ) {
+      return;
+    }
+
+    const { preorderUsage, extraUsage } = calcUsageByItem();
+    let preorderRemaining = 0;
+    let extraRemaining = 0;
+    let totalRevenue = 0;
+    let couponsGiven = 0;
+    let couponsRedeemed = 0;
+
+    items.forEach((item) => {
+      preorderRemaining += Math.max(item.preorderStock - (preorderUsage[item.id] || 0), 0);
+      extraRemaining += Math.max(item.extraStock - (extraUsage[item.id] || 0), 0);
+    });
+
+    preorders.forEach((p) => {
+      totalRevenue += p.cost || 0;
+      if (p.couponGiven) couponsGiven++;
+      if (p.couponRedeemed) couponsRedeemed++;
+    });
+
+    extraOrders.forEach((o) => {
+      totalRevenue += o.cost || 0;
+    });
+
+    statTotalItems.textContent = items.length;
+    statTotalPreorders.textContent = preorders.length;
+    statTotalExtra.textContent = extraOrders.length;
+    statPreRemaining.textContent = preorderRemaining;
+    statExtraRemaining.textContent = extraRemaining;
+    statCouponsGiven.textContent = couponsGiven;
+    statCouponsRedeemed.textContent = couponsRedeemed;
+    statTotalRevenue.textContent = formatCurrency(totalRevenue);
+  }
+});
