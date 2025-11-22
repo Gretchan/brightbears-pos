@@ -258,11 +258,16 @@
     </form>
   </dialog>
 
-  <!-- Firebase Config -->
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- Your Firebase config: creates global `db` -->
   <script src="js/firebase-config.js?v=4"></script>
 
-  <!-- Main JS -->
+  <!-- Main app logic -->
   <script src="js/main.js?v=4"></script>
 
 </body>
 </html>
+
