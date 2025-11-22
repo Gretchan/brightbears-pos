@@ -24,12 +24,13 @@
         </div>
       </div>
 
-      <nav class="sidebar-nav">
-        <button data-section="dashboard" class="nav-btn active">Dashboard</button>
-        <button data-section="settings" class="nav-btn">Settings</button>
-        <button data-section="preorders" class="nav-btn">Preorders</button>
-        <button data-section="extra-orders" class="nav-btn">Extra Orders</button>
-      </nav>
+    <nav class="sidebar-nav">
+  <button class="nav-btn active" onclick="switchSection('dashboard', this)">Dashboard</button>
+  <button class="nav-btn" onclick="switchSection('settings', this)">Settings</button>
+  <button class="nav-btn" onclick="switchSection('preorders', this)">Preorders</button>
+  <button class="nav-btn" onclick="switchSection('extra-orders', this)">Extra Orders</button>
+</nav>
+
     </aside>
 
     <!-- MAIN AREA -->
