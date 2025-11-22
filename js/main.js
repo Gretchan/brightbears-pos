@@ -1,3 +1,19 @@
+// Global section switcher used by sidebar buttons
+function switchSection(sectionId, btnEl) {
+  const sections = document.querySelectorAll(".section");
+  sections.forEach((s) => s.classList.remove("visible"));
+
+  const target = document.getElementById(sectionId);
+  if (target) target.classList.add("visible");
+
+  const navButtons = document.querySelectorAll(".nav-btn");
+  navButtons.forEach((b) => b.classList.remove("active"));
+  if (btnEl) btnEl.classList.add("active");
+}
+
+// Make sure dashboard is visible on first load
+switchSection("dashboard");
+
 // js/main.js
 
 console.log("Bright Bears POS main.js loaded");
