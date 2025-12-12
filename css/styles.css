@@ -111,15 +111,7 @@ body {
 }
 
 .nav-btn::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: transparent;
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
+  display: none;
 }
 
 .nav-btn.active {
