@@ -883,6 +883,146 @@ function updateDashboardStats() {
   let couponsRedeemed = 0;
 
   items.forEach((item) => {
+    preorderRemaining += Math.max(
+      item.preorderStock - (preorderUsage[item.id] || 0),
+      0
+    );
+    extraRemaining += Math.max(
+      item.extraStock - (extraUsage[item.id] || 0),
+      0
+    );
+  });
+
+  preorders.forEach((p) => {
+    const cost =
+      p.cost ||
+      getPreorderLines(p).reduce((sum, li) => sum + (li.cost || 0), 0);
+    totalRevenue += cost;
+    if (p.couponGiven) couponsGiven++;
+    if (p.couponRedeemed) couponsRedeemed++;
+  });
+
+  extraOrders.forEach((o) => {
+    const cost =
+      o.cost ||
+      getExtraLines(o).reduce((sum, li) => sum + (li.cost || 0), 0);
+    totalRevenue += cost;
+  });
+
+  statTotalItems.textContent = items.length;
+  statTotalPreorders.textContent = preorders.length;
+  statTotalExtra.textContent = extraOrders.length;
+  statPreRemaining.textContent = preorderRemaining;
+  statExtraRemaining.textContent = extraRemaining;
+  statCouponsGiven.textContent = couponsGiven;
+  statCouponsRedeemed.textContent = couponsRedeemed;
+  statTotalRevenue.textContent = formatCurrency(totalRevenue);
+
+  // NEW: also update charts
+  updateDashboardCharts();
+}
+function updateDashboardCharts() {
+  // Preorders by item (qty)
+  const preByItem = {};
+  preorders.forEach((p) => {
+    getPreorderLines(p).forEach((li) => {
+      preByItem[li.itemId] = (preByItem[li.itemId] || 0) + li.quantity;
+    });
+  });
+  const preData = Object.entries(preByItem).map(([itemId, qty]) => ({
+    label: (findItemById(itemId) || { name: "Item" }).name,
+    value: qty,
+  }));
+  renderBarChart("chart-preorders-items", preData);
+
+  // Extra orders by item (qty)
+  const extraByItem = {};
+  extraOrders.forEach((o) => {
+    getExtraLines(o).forEach((li) => {
+      extraByItem[li.itemId] = (extraByItem[li.itemId] || 0) + li.quantity;
+    });
+  });
+  const extraData = Object.entries(extraByItem).map(([itemId, qty]) => ({
+    label: (findItemById(itemId) || { name: "Item" }).name,
+    value: qty,
+  }));
+  renderBarChart("chart-extra-items", extraData);
+
+  // Revenue split: preorders vs extra orders
+  let preRevenue = 0;
+  let extraRevenue = 0;
+
+  preorders.forEach((p) => {
+    const cost =
+      p.cost ||
+      getPreorderLines(p).reduce((sum, li) => sum + (li.cost || 0), 0);
+    preRevenue += cost;
+  });
+
+  extraOrders.forEach((o) => {
+    const cost =
+      o.cost ||
+      getExtraLines(o).reduce((sum, li) => sum + (li.cost || 0), 0);
+    extraRevenue += cost;
+  });
+
+  renderBarChart("chart-revenue-split", [
+    { label: "Preorders", value: preRevenue },
+    { label: "Extra Orders", value: extraRevenue },
+  ]);
+}
+
+function renderBarChart(containerId, data) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+  if (!data.length) {
+    container.innerHTML =
+      '<p class="chart-empty">No data yet</p>';
+    return;
+  }
+
+  const max = Math.max(...data.map((d) => d.value)) || 1;
+
+  data.forEach((d) => {
+    const row = document.createElement("div");
+    row.className = "bar-chart-row";
+
+    const label = document.createElement("span");
+    label.className = "bar-chart-label";
+    label.textContent = d.label;
+
+    const wrap = document.createElement("div");
+    wrap.className = "bar-chart-bar-wrap";
+
+    const bar = document.createElement("div");
+    bar.className = "bar-chart-bar";
+    bar.style.width = `${(d.value / max) * 100}%`;
+
+    wrap.appendChild(bar);
+
+    const value = document.createElement("span");
+    value.className = "bar-chart-value";
+    value.textContent = d.value;
+
+    row.appendChild(label);
+    row.appendChild(wrap);
+    row.appendChild(value);
+
+    container.appendChild(row);
+  });
+}
+
+
+  const { preorderUsage, extraUsage } = calcUsageByItem();
+  let preorderRemaining = 0;
+  let extraRemaining = 0;
+  let totalRevenue = 0;
+  let couponsGiven = 0;
+  let couponsRedeemed = 0;
+
+  items.forEach((item) => {
     preorderRemaining += Math.max(item.preorderStock - (preorderUsage[item.id] || 0), 0);
     extraRemaining += Math.max(item.extraStock - (extraUsage[item.id] || 0), 0);
   });
