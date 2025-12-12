@@ -60,7 +60,13 @@ function findItemById(id) {
 function getPreorderLines(order) {
   if (Array.isArray(order.items) && order.items.length) return order.items;
   if (order.itemId) {
-    return [{ itemId: order.itemId, quantity: order.quantity, cost: order.cost || 0 }];
+    return [
+      {
+        itemId: order.itemId,
+        quantity: order.quantity,
+        cost: order.cost || 0,
+      },
+    ];
   }
   return [];
 }
@@ -68,7 +74,13 @@ function getPreorderLines(order) {
 function getExtraLines(order) {
   if (Array.isArray(order.items) && order.items.length) return order.items;
   if (order.itemId) {
-    return [{ itemId: order.itemId, quantity: order.quantity, cost: order.cost || 0 }];
+    return [
+      {
+        itemId: order.itemId,
+        quantity: order.quantity,
+        cost: order.cost || 0,
+      },
+    ];
   }
   return [];
 }
@@ -118,9 +130,13 @@ function checkPreorderStock(itemId, qtyToAdd) {
   const before = item.preorderStock - used;
   const after = before - qtyToAdd;
 
-  if (before <= 0) return { ok: false, msg: `No preorder stock left for ${item.name}.` };
+  if (before <= 0)
+    return { ok: false, msg: `No preorder stock left for ${item.name}.` };
   if (after < 0)
-    return { ok: false, msg: `Only ${before} preorder stock left for ${item.name}.` };
+    return {
+      ok: false,
+      msg: `Only ${before} preorder stock left for ${item.name}.`,
+    };
 
   return { ok: true, before, after };
 }
@@ -148,9 +164,13 @@ function checkExtraStock(itemId, qtyToAdd) {
   const before = item.extraStock - used;
   const after = before - qtyToAdd;
 
-  if (before <= 0) return { ok: false, msg: `No extra stock left for ${item.name}.` };
+  if (before <= 0)
+    return { ok: false, msg: `No extra stock left for ${item.name}.` };
   if (after < 0)
-    return { ok: false, msg: `Only ${before} extra stock left for ${item.name}.` };
+    return {
+      ok: false,
+      msg: `Only ${before} extra stock left for ${item.name}.`,
+    };
 
   return { ok: true, before, after };
 }
@@ -207,7 +227,9 @@ const statTotalExtra = document.getElementById("stat-total-extra-orders");
 const statPreRemaining = document.getElementById("stat-preorder-remaining");
 const statExtraRemaining = document.getElementById("stat-extra-remaining");
 const statCouponsGiven = document.getElementById("stat-coupons-given");
-const statCouponsRedeemed = document.getElementById("stat-coupons-redeemed");
+const statCouponsRedeemed = document.getElementById(
+  "stat-coupons-redeemed"
+);
 const statTotalRevenue = document.getElementById("stat-total-revenue");
 
 /* ============================================================
@@ -248,7 +270,9 @@ if (itemForm && itemsTableBody) {
 
     const id = document.getElementById("item-id").value || null;
     const name = document.getElementById("item-name").value.trim();
-    const price = parseFloat(document.getElementById("item-price").value || "0");
+    const price = parseFloat(
+      document.getElementById("item-price").value || "0"
+    );
     const preorderStock = parseInt(
       document.getElementById("item-preorder-stock").value || "0",
       10
@@ -323,7 +347,8 @@ function renderItemsTable() {
         document.getElementById("item-id").value = id;
         document.getElementById("item-name").value = item.name;
         document.getElementById("item-price").value = item.price;
-        document.getElementById("item-preorder-stock").value = item.preorderStock;
+        document.getElementById("item-preorder-stock").value =
+          item.preorderStock;
         document.getElementById("item-extra-stock").value = item.extraStock;
       } else if (action === "delete") {
         if (confirm(`Delete item "${item.name}"?`)) {
@@ -542,7 +567,8 @@ function renderPreordersTable() {
     });
 
     const summary = parts.join(", ");
-    const cost = order.cost || lines.reduce((sum, li) => sum + (li.cost || 0), 0);
+    const cost =
+      order.cost || lines.reduce((sum, li) => sum + (li.cost || 0), 0);
     totalValue += cost;
 
     const tr = document.createElement("tr");
@@ -553,14 +579,16 @@ function renderPreordersTable() {
       <td>${totalQty}</td>
       <td>${cost.toFixed(2)}</td>
       <td>
-        <span class="badge-toggle ${order.couponGiven ? "on" : "off"}"
-              data-action="toggle-given" data-id="${order.id}">
+        <span class="badge-toggle ${
+          order.couponGiven ? "on" : "off"
+        }" data-action="toggle-given" data-id="${order.id}">
           ${order.couponGiven ? "Yes" : "No"}
         </span>
       </td>
       <td>
-        <span class="badge-toggle ${order.couponRedeemed ? "on" : "off"}"
-              data-action="toggle-redeemed" data-id="${order.id}">
+        <span class="badge-toggle ${
+          order.couponRedeemed ? "on" : "off"
+        }" data-action="toggle-redeemed" data-id="${order.id}">
           ${order.couponRedeemed ? "Yes" : "No"}
         </span>
       </td>
@@ -587,7 +615,8 @@ function renderPreordersTable() {
       if (!order) return;
 
       const updates = {};
-      if (action === "toggle-given") updates.couponGiven = !order.couponGiven;
+      if (action === "toggle-given")
+        updates.couponGiven = !order.couponGiven;
       if (action === "toggle-redeemed")
         updates.couponRedeemed = !order.couponRedeemed;
 
@@ -710,7 +739,8 @@ function openExtraDialog(existing = null) {
   if (existing) {
     currentExtraEditingId = existing.id;
     if (extraIdInput) extraIdInput.value = existing.id;
-    if (extraPaymentSelect) extraPaymentSelect.value = existing.paymentMethod || "Cash";
+    if (extraPaymentSelect)
+      extraPaymentSelect.value = existing.paymentMethod || "Cash";
 
     extraDraftItems = getExtraLines(existing).map((li) => {
       const item = findItemById(li.itemId);
@@ -798,7 +828,8 @@ function renderExtraTable() {
     });
 
     const summary = parts.join(", ");
-    const cost = order.cost || lines.reduce((sum, li) => sum + (li.cost || 0), 0);
+    const cost =
+      order.cost || lines.reduce((sum, li) => sum + (li.cost || 0), 0);
     totalValue += cost;
 
     const tr = document.createElement("tr");
@@ -809,8 +840,9 @@ function renderExtraTable() {
       <td>${cost.toFixed(2)}</td>
       <td>${order.paymentMethod || ""}</td>
       <td>
-        <span class="badge-toggle ${order.paid ? "on" : "off"}"
-              data-action="toggle-paid" data-id="${order.id}">
+        <span class="badge-toggle ${
+          order.paid ? "on" : "off"
+        }" data-action="toggle-paid" data-id="${order.id}">
           ${order.paid ? "Yes" : "No"}
         </span>
       </td>
@@ -859,7 +891,7 @@ function renderExtraTable() {
 }
 
 /* ============================================================
-   DASHBOARD STATS
+   DASHBOARD STATS + CHARTS
    ============================================================ */
 function updateDashboardStats() {
   if (
@@ -904,8 +936,7 @@ function updateDashboardStats() {
 
   extraOrders.forEach((o) => {
     const cost =
-      o.cost ||
-      getExtraLines(o).reduce((sum, li) => sum + (li.cost || 0), 0);
+      o.cost || getExtraLines(o).reduce((sum, li) => sum + (li.cost || 0), 0);
     totalRevenue += cost;
   });
 
@@ -918,9 +949,9 @@ function updateDashboardStats() {
   statCouponsRedeemed.textContent = couponsRedeemed;
   statTotalRevenue.textContent = formatCurrency(totalRevenue);
 
-  // NEW: also update charts
   updateDashboardCharts();
 }
+
 function updateDashboardCharts() {
   // Preorders by item (qty)
   const preByItem = {};
@@ -978,8 +1009,7 @@ function renderBarChart(containerId, data) {
 
   container.innerHTML = "";
   if (!data.length) {
-    container.innerHTML =
-      '<p class="chart-empty">No data yet</p>';
+    container.innerHTML = '<p class="chart-empty">No data yet</p>';
     return;
   }
 
@@ -1012,39 +1042,4 @@ function renderBarChart(containerId, data) {
 
     container.appendChild(row);
   });
-}
-
-
-  const { preorderUsage, extraUsage } = calcUsageByItem();
-  let preorderRemaining = 0;
-  let extraRemaining = 0;
-  let totalRevenue = 0;
-  let couponsGiven = 0;
-  let couponsRedeemed = 0;
-
-  items.forEach((item) => {
-    preorderRemaining += Math.max(item.preorderStock - (preorderUsage[item.id] || 0), 0);
-    extraRemaining += Math.max(item.extraStock - (extraUsage[item.id] || 0), 0);
-  });
-
-  preorders.forEach((p) => {
-    const cost = p.cost || getPreorderLines(p).reduce((sum, li) => sum + (li.cost || 0), 0);
-    totalRevenue += cost;
-    if (p.couponGiven) couponsGiven++;
-    if (p.couponRedeemed) couponsRedeemed++;
-  });
-
-  extraOrders.forEach((o) => {
-    const cost = o.cost || getExtraLines(o).reduce((sum, li) => sum + (li.cost || 0), 0);
-    totalRevenue += cost;
-  });
-
-  statTotalItems.textContent = items.length;
-  statTotalPreorders.textContent = preorders.length;
-  statTotalExtra.textContent = extraOrders.length;
-  statPreRemaining.textContent = preorderRemaining;
-  statExtraRemaining.textContent = extraRemaining;
-  statCouponsGiven.textContent = couponsGiven;
-  statCouponsRedeemed.textContent = couponsRedeemed;
-  statTotalRevenue.textContent = formatCurrency(totalRevenue);
 }
